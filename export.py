@@ -1,9 +1,10 @@
 import json
 import logging
 import os
+from core import ensure_directory
 
 def export_to_json(data, output_dir):
-    """Export processed data to a JSON file."""
+    """Export processed video data to a JSON file."""
     ensure_directory(output_dir)  # Ensure the output directory exists
     filename = os.path.join(output_dir, f"{data['filename']}.json")
     

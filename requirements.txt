@@ -1,12 +1,7 @@
-ffmpeg-python==0.2.0
-requests==2.31.0
-tqdm==4.64.1
-transformers==4.21.1
-modelscope==0.1.4
-validators==0.20.0
-pymongo==4.10.1
-
-# Added dependencies
-torch==2.0.1  # Please select an appropriate version based on your environment and GPU support
-accelerate==0.20.3
-qwen-vl-utils @ git+https://github.com/Qwen-VL/qwen-vl-utils.git  # Example for git-based install
+requests==2.28.1           # For handling HTTP requests to APIs (Qwen2-VL-Chat)
+pytz==2022.2.1             # Time zone handling if needed for processing timestamps or logging
+tqdm==4.64.1               # For displaying progress bars during video download
+pymongo==4.2.0             # MongoDB client for Python, for Cosmos DB or standard MongoDB interaction
+ffmpeg-python==0.2.0       # Python bindings for FFmpeg; for video metadata extraction and scene detection
+python-dotenv==0.19.2      # To load environment variables from .env file, utility for secure handling of API keys and tokens
+tenacity==8.0.1            # For retry logic in case of network issues during requests, particularly API interactions
