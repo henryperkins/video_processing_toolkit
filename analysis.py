@@ -38,7 +38,19 @@ def extract_metadata(filepath):
         return None
 
 def detect_scenes(filepath, threshold=0.3):
-    """Detect scenes in the video and return a list of timestamps."""
+    """Detect scenes in the video and return a list of timestamps.
+
+    Args:
+        filepath (str): The path to the video file.
+        threshold (float, optional): The threshold value for scene detection. Defaults to 0.3.
+
+    Returns:
+        list: A list of timestamps indicating the detected scenes in the video.
+
+    Raises:
+        Exception: If an error occurs during scene detection.
+
+    """
     logging.debug(f"Detecting scenes for file: {filepath}")
     try:
         scenes = []

@@ -1,7 +1,13 @@
 import logging
 
 def apply_tags(video_info, custom_rules=None):
-    """Apply tags to video based on metadata and optional custom rules."""
+    """Apply tags to video based on metadata and optional custom rules.
+    Args:
+        video_info (dict): A dictionary containing video metadata.
+        custom_rules (list, optional): A list of custom rules to apply. Defaults to None.
+    Returns:
+        list: A list of tags applied to the video.
+    """
     tags = []
 
     # Default Rules
@@ -42,7 +48,17 @@ def classify_video(video_info):
     return classification
 
 def apply_custom_rules(video_info, tags, custom_rules):
-    """Applies custom tagging rules."""
+    """Applies custom tagging rules.
+
+    Args:
+        video_info (dict): Information about the video.
+        tags (list): List of tags to be modified.
+        custom_rules (list): List of custom tagging rules.
+
+    Returns:
+        None
+
+    """
     for rule in custom_rules:
         # Custom rule example: Adds a specific tag if a keyword is in the description
         if rule['keyword'] in video_info.get('qwen_description', ''):
