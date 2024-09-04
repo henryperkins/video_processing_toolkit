@@ -1,6 +1,6 @@
 import argparse
 import logging
-from core import load_config, ensure_directory
+from core import load_config, ensure_directory, setup_logging
 
 def parse_arguments():
     """

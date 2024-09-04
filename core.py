@@ -2,6 +2,7 @@ import requests
 import configparser
 import logging
 import os
+import pymongo
 from pymongo.mongo_client import MongoClient  # MongoDB client to interact with MongoDB and Cosmos DB
 
 # Setup configuration parser
