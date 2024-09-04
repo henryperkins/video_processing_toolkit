@@ -4,8 +4,15 @@ import os
 from core import ensure_directory
 
 def export_to_json(data, output_dir):
-    """Export processed video data to a JSON file."""
+    """
+    Export processed video data to a JSON file.
+
+    Args:
+        data (dict): Processed video data including metadata, tags, and classification.
+        output_dir (str): Directory where the JSON file should be exported.
+    """
     ensure_directory(output_dir)  # Ensure the output directory exists
+    
     filename = os.path.join(output_dir, f"{data['filename']}.json")
     
     try:

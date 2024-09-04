@@ -1,6 +1,6 @@
 import logging
-from core import setup_logging, load_config, ensure_directory
-from analysis import extract_metadata, detect_scenes, QwenVLProcessor
+from core import setup_logging, load_config, ensure_directory, query_qwen_vl_chat
+from analysis import extract_metadata, detect_scenes
 from tagging import apply_tags, classify_video
 from export import export_to_json
 import os
@@ -10,7 +10,7 @@ from urllib.parse import urlparse
 
 def process_video_pipeline(video_url, scene_threshold=None, custom_rules=None, output_dir=None):
     """
-    Execute the full processing pipeline for a single video.
+    Executes the full processing pipeline for a single video.
 
     Args:
         video_url (str): The URL of the video to process.
@@ -18,16 +18,18 @@ def process_video_pipeline(video_url, scene_threshold=None, custom_rules=None, o
         custom_rules (list or None): Custom tagging rules.
         output_dir (str or None): Directory path to save processed information.
     """
-    config = load_config()  # Load configuration from the config.ini file
+    config = load_config()  # Load configuration settings
 
     # Use defaults from config.ini if not provided via arguments
-    scene_threshold = scene_threshold if scene_threshold is not None else config.getfloat('SceneDetection', 'DefaultThreshold', fallback=0.3)
+    scene_threshold = scene_threshold if scene_threshold is not None else config.getfloat('SceneDetection',
+                                                                                         'DefaultThreshold',
+                                                                                         fallback=0.3)
     output_dir = output_dir if output_dir is not None else config.get('Paths', 'ProcessedDirectory', fallback='processed_videos/')
     
     logging.info(f"Starting pipeline for video: {video_url}")
     ensure_directory(output_dir)  # Ensure the output directory exists
 
-    # Determine filename based on URL
+    # Create a filename based on the URL
     filename = os.path.basename(urlparse(video_url).path)
 
     # Download Video
@@ -39,19 +41,19 @@ def process_video_pipeline(video_url, scene_threshold=None, custom_rules=None, o
         if metadata:
             # Perform Scene Detection with the specified threshold
             scenes = detect_scenes(local_filepath, threshold=scene_threshold)
-            
-            # Process with Qwen2-VL
-            qwen_processor = QwenVLProcessor(model_dir=config.get('QwenVL', 'ModelDir', fallback='/mnt/model/Qwen2-VL-7B-Instruct'))
-            qwen_results = qwen_processor.process_video(local_filepath)
 
-            # Integrating metadata with Qwen results
-            video_info = {**metadata, **qwen_results, 'scenes': scenes}
+            # Process video using Qwen2-VL Chat Model via API
+            instruction = config.get('QwenVL', 'DefaultInstruction', fallback="Describe this video.")
+            qwen_description = query_qwen_vl_chat(video_url, instruction=instruction)
+
+            # Aggregate metadata, scenes, and AI descriptions
+            video_info = {**metadata, 'qwen_description': qwen_description, 'scenes': scenes}
 
             # Apply Tags and Classification with optional custom rules
             tags = apply_tags(video_info, custom_rules=custom_rules)
             classification = classify_video(video_info)
 
-            # Add tags and classification to video information
+            # Update video information with tags and classification data
             video_info.update({
                 'tags': tags,
                 'classification': classification
@@ -65,6 +67,7 @@ def process_video_pipeline(video_url, scene_threshold=None, custom_rules=None, o
             logging.error(f"Metadata extraction failed for {local_filepath}.")
     else:
         logging.error(f"Failed to download video from URL: {video_url}")
+
 
 def download_video(url, filename):
     """Downloads a video and stores it in the specified directory.
