@@ -1,0 +1,26 @@
+{
+    "rules": [
+        {
+            "description_keywords": ["Aerial", "Drone", "Bird's Eye"],
+            "tags": ["Aerial Shot", "Drone Footage"]
+        },
+        {
+            "metadata_conditions": {
+                "resolution": "4K",
+                "duration_gt": 600
+            },
+            "tags": ["High Resolution", "Extended Play"]
+        },
+        {
+            "description_keywords": ["Action", "Explosive"],
+            "tags": ["High-Intensity", "Action-Packed"]
+        },
+        {
+            "metadata_conditions": {
+                "codec": "h264",
+                "bit_rate_gt": 2000000
+            },
+            "tags": ["High Bitrate", "H.264 Codec"]
+        }
+    ]
+}
