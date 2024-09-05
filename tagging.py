@@ -1,6 +1,5 @@
 import logging
 import json
-import os
 
 def load_custom_tags(custom_rules_path):
     """Loads custom tagging rules from a JSON file."""
@@ -10,10 +9,9 @@ def load_custom_tags(custom_rules_path):
     with open(custom_rules_path, 'r') as file:
         return json.load(file)
 
-
 def apply_tags(video_info, custom_rules=None):
     """
-    Applies tags to a video based on its metadata and AI-generated description.
+    Applies tags to a video based on its metadata, AI-generated description, and custom rules.
 
     Args:
         video_info (dict): A dictionary containing video metadata and AI-generated description.
@@ -39,10 +37,10 @@ def apply_tags(video_info, custom_rules=None):
     
     if "action" in description:
         tags.append("Action")
-
+    
     if "night shot" in description:
         tags.append("Night-time Filming")
-    
+
     # (Add more rules/keywords as necessary)
 
     # Apply custom rules if available
@@ -52,10 +50,9 @@ def apply_tags(video_info, custom_rules=None):
 
     return list(set(tags))  # Remove duplicates
 
-
 def apply_custom_rules(video_info, tags, custom_tags_rules):
     """
-    Applies custom rules provided in a JSON file for tagging the video.
+    Applies custom rules provided in a JSON file to tag the video.
 
     Args:
         video_info (dict): A dictionary containing video metadata and AI-generated descriptions.
@@ -68,9 +65,9 @@ def apply_custom_rules(video_info, tags, custom_tags_rules):
     rules = custom_tags_rules.get("rules", [])
     for rule in rules:
         if 'description_keywords' in rule:
-            keywords = set(rule['description_keywords'])
+            keywords = set(rule.get('description_keywords', []))
             if keywords.intersection(set(video_info.get('qwen_description', "").split())):
-                tags.extend(rule['tags'])
+                tags.extend(rule.get('tags', []))
 
         if 'metadata_conditions' in rule:
             conditions = rule.get('metadata_conditions', {})
@@ -78,10 +75,9 @@ def apply_custom_rules(video_info, tags, custom_tags_rules):
             duration = video_info.get('duration', 0)
             if (conditions.get('resolution') == resolution and 
                 duration > conditions.get('duration_gt', 0)):
-                tags.extend(rule['tags'])
+                tags.extend(rule.get('tags', []))
 
     return list(set(tags))  # Remove duplicates
-
 
 def classify_video(video_info):
     """

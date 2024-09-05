@@ -1,7 +1,8 @@
-requests==2.28.1           # For handling HTTP requests to APIs (Qwen2-VL-Chat)
-pytz==2022.2.1             # Time zone handling if needed for processing timestamps or logging
-tqdm==4.64.1               # For displaying progress bars during video download
-pymongo==4.2.0             # MongoDB client for Python, for Cosmos DB or standard MongoDB interaction
-ffmpeg-python==0.2.0       # Python bindings for FFmpeg; for video metadata extraction and scene detection
-python-dotenv==0.19.2      # To load environment variables from .env file, utility for secure handling of API keys and tokens
-tenacity==8.0.1            # For retry logic in case of network issues during requests, particularly API interactions
+requests==2.28.1
+configparser==5.2.0
+beautifulsoup4==4.11.1
+tqdm==4.64.1
+pymongo==4.2.0
+ffmpeg-python==0.2.0
+lxml==4.9.1
+mongoengine==0.26.0

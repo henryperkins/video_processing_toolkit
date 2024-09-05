@@ -37,7 +37,6 @@ def extract_metadata(filepath):
         logging.error(f"Failed to extract metadata: {e}")
         return None
 
-
 def detect_scenes(filepath, threshold=0.3):
     """
     Detect scene changes in a video file using FFmpeg's `select` filter.

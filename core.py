@@ -2,12 +2,10 @@ import requests
 import configparser
 import logging
 import os
-import pymongo
-from pymongo.mongo_client import MongoClient  # MongoDB client to interact with MongoDB and Cosmos DB
+from logging.handlers import RotatingFileHandler
 
-# Setup configuration parser
+# Initial configurations and logging setup
 config = configparser.ConfigParser()
-
 
 def load_config(config_path='config.ini'):
     """Loads the configuration from a config file."""
@@ -18,14 +16,10 @@ def load_config(config_path='config.ini'):
         logging.error(f"Error reading config.ini: {e}")
         raise
 
-
 def setup_logging(log_file='video_processing.log'):
     """Set up logging configuration."""
-    log_handler = logging.handlers.RotatingFileHandler(log_file, maxBytes=1024*1024, backupCount=5)
-    logging.basicConfig(level=logging.INFO, 
-                        format='%(asctime)s - %(levelname)s - %(message)s', 
-                        handlers=[log_handler])
-
+    log_handler = RotatingFileHandler(log_file, maxBytes=1024*1024, backupCount=5)
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', handlers=[log_handler])
 
 def ensure_directory(directory):
     """Ensures that a directory exists."""
@@ -35,35 +29,45 @@ def ensure_directory(directory):
     else:
         logging.debug(f"Directory exists: {directory}")
 
-
 def connect_to_mongodb():
-    """Connect to the MongoDB cluster using the details in the config.ini file."""
-    mongodb_uri = config.get('MongoDB', 'URI')
-    client = MongoClient(mongodb_uri)
-
+    """Establishes a connection to MongoDB/CosmosDB."""
     try:
-        # This will trigger a connection validation to the MongoDB instance
-        client.admin.command('ping')
-        logging.info("Connected successfully to MongoDB server.")
+        from pymongo import MongoClient
+        db_uri = config.get("MongoDB", "URI", fallback="your-default-uri")
+        client = MongoClient(db_uri)
+        # Since ping and connection checks might vary, a dedicated method is useful
+        client.admin.command('ping')  
+        return client
     except Exception as e:
-        logging.error(f"Failed to connect to MongoDB: {e}")
-        raise
-    
-    return client
-
+        logging.error(f"MongoDB connection failed: {e}")
+        return None
 
 def get_mongodb_collection():
-    """Retrieve the specific MongoDB database and collection."""
-    client = connect_to_mongodb()
-    database_name = config.get('MongoDB', 'DatabaseName')
-    collection_name = config.get('MongoDB', 'CollectionName')
-    
-    return client[database_name][collection_name]
+    """Retrieves the MongoDB collection after establishing a connection."""
+    try:
+        client = connect_to_mongodb()
+        database_name = config.get("MongoDB", "DatabaseName", fallback="video_database")
+        collection_name = config.get("MongoDB", "CollectionName", fallback="videos")
+        db = client[database_name]
+        collection = db[collection_name]
+        return collection
+    except Exception as e:
+        logging.error(f"Could not retrieve MongoDB collection: {e}")
+        return None
 
+def load_priority_keywords(file_path='priority_keywords.json'):
+    """Load priority keywords for analysis."""
+    if os.path.exists(file_path):
+        try:
+            with open(file_path, 'r') as file:
+                return json.load(file)
+        except Exception as e:
+            logging.error(f"Could not load priority keywords: {e}")
+    return []
 
 def query_qwen_vl_chat(video_url, instruction="Describe this video.", use_vpc=False):
     """
-    Send a request to the Qwen-VL-Chat model API over HTTPS to process a video.
+    Sends a request to the Qwen-VL-Chat model API over HTTPS to process a video.
 
     Args:
         video_url (str): The URL of the video file.
@@ -73,8 +77,18 @@ def query_qwen_vl_chat(video_url, instruction="Describe this video.", use_vpc=Fa
     Returns:
         str: The model's response, typically a description or analysis of the video.
     """
-    endpoint = config.get("QwenVL", "VpcEndpoint") if use_vpc else config.get("QwenVL", "PublicEndpoint")
-    access_key = config.get("QwenVL", "AccessKey")
+    # Load from config with fallbacks
+    public_endpoint = config.get("QwenVL", "PublicEndpoint", fallback="https://your-public-endpoint")
+    vpc_endpoint = config.get("QwenVL", "VpcEndpoint", fallback="https://your-vpc-endpoint")
+    access_key = config.get("QwenVL", "AccessKey", fallback="your-access-key")
+
+    # Choose the endpoint depending on VPC flag
+    endpoint = vpc_endpoint if use_vpc else public_endpoint
+
+    # Add priority keywords to the instruction
+    priority_keywords = load_priority_keywords()
+    if priority_keywords:
+        instruction += " Focus on these aspects: " + ", ".join(priority_keywords)
 
     # Prepare the request payload
     payload = {
@@ -82,17 +96,17 @@ def query_qwen_vl_chat(video_url, instruction="Describe this video.", use_vpc=Fa
         "instruction": instruction,
     }
 
-    # Set the Authorization header with the access key
+    # Set the Authorization header with the access key.
     headers = {
         "Authorization": f"Bearer {access_key}",
         "Content-Type": "application/json"
     }
 
     try:
-        # Send the POST request to the model's API over HTTPS
+        # Send a POST request to the model's API over HTTPS
         response = requests.post(endpoint, json=payload, headers=headers)
 
-        # Handle the response, checking for status_code 200 (Success)
+        # Handle the response and return the description from the AI model
         if response.status_code == 200:
             result = response.json()
             return result.get("description", "No description available.")
@@ -101,15 +115,5 @@ def query_qwen_vl_chat(video_url, instruction="Describe this video.", use_vpc=Fa
             return None
 
     except requests.exceptions.RequestException as e:
-        # Handle request exceptions (network issues, timeouts, etc.)
         logging.error(f"Failed to connect to the API: {e}")
         return None
-
-
-# Example usage of connecting to the MongoDB and querying collection
-if __name__ == "__main__":
-    try:
-        collection = get_mongodb_collection()
-        logging.info(f"Sample document from collection: {collection.find_one()}")
-    except Exception as e:
-        logging.error(f"Error during MongoDB operation: {e}")
