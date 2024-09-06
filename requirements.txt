@@ -1,12 +1,8 @@
-ffmpeg-python==0.2.0
-requests==2.31.0
+requests==2.28.1
+configparser==5.2.0
+beautifulsoup4==4.11.1
 tqdm==4.64.1
-transformers==4.21.1
-modelscope==0.1.4
-validators==0.20.0
-pymongo==4.10.1
-
-# Added dependencies
-torch==2.0.1  # Please select an appropriate version based on your environment and GPU support
-accelerate==0.20.3
-qwen-vl-utils @ git+https://github.com/Qwen-VL/qwen-vl-utils.git  # Example for git-based install
+pymongo==4.2.0
+ffmpeg-python==0.2.0
+lxml==4.9.1
+mongoengine==0.26.0
