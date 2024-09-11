@@ -1,7 +1,28 @@
 import subprocess
 import logging
+import csv
 import json
 import os
+from core import query_qwen_vl_chat, ensure_directory
+
+def segment_video(input_video, output_dir, segment_length=15, max_resolution="720p", max_fps=30):
+    """Segments a video with resolution and FPS limits."""
+    try:
+        ensure_directory(output_dir)
+        command = [
+            'ffmpeg',
+            '-i', input_video,
+            '-vf', f'scale=trunc(min(iw\,1280)/2)*2:trunc(min(ih\,720)/2)*2,fps={max_fps}',
+            '-c:v', 'libx264', 
+            '-c:a', 'copy', 
+            '-f', 'segment',
+            '-segment_time', str(segment_length),
+            f'{output_dir}/clip_%03d.mp4'
+        ]
+        subprocess.run(command, check=True)
+        print(f"Video '{input_video}' segmented into {segment_length}-second clips.")
+    except subprocess.CalledProcessError as e:
+        print(f"Error segmenting video: {e}")
 
 def extract_metadata(filepath):
     """
