@@ -11,7 +11,15 @@ from bs4 import BeautifulSoup
 import re
 
 def is_video_url(url):
-    """Check if the URL directly links to a video file based on its extension or the headers."""
+    """
+    Checks if a given URL directly links to a video file.
+
+    Args:
+        url (str): The URL to check.
+
+    Returns:
+        bool: True if the URL is a direct video link, False otherwise.
+    """
     video_extensions = ['.mp4', '.avi', '.mov', '.mkv', '.flv', '.wmv', '.webm', '.ogg']
     if any(url.endswith(ext) for ext in video_extensions):
         return True
@@ -27,7 +35,15 @@ def is_video_url(url):
     return False
 
 def extract_video_url_from_html(html_content):
-    """Scrape HTML content to find a likely video URL."""
+    """
+    Extracts a video URL from HTML content.
+
+    Args:
+        html_content (str): The HTML content to parse.
+
+    Returns:
+        str or None: The extracted video URL, or None if no URL is found.
+    """
     soup = BeautifulSoup(html_content, 'html.parser')
 
     # Look for <video> tags
@@ -58,7 +74,16 @@ def extract_video_url_from_html(html_content):
     return None
 
 def download_video(url, filename):
-    """Downloads a video and stores it in the specified directory."""
+    """
+    Downloads a video from a URL and saves it to a file.
+
+    Args:
+        url (str): The URL of the video to download.
+        filename (str): The name to save the video as.
+
+    Returns:
+        str or None: The path to the downloaded video file, or None if the download fails.
+    """
     config = load_config()
     download_dir = config.get('Paths', 'DownloadDirectory', fallback='downloaded_videos')
     ensure_directory(download_dir)
@@ -71,14 +96,19 @@ def download_video(url, filename):
         direct_url = url
     else:
         logging.info(f"URL {url} is not a direct video link, attempting to scrape the page for videos.")
-        response = requests.get(url)
-        if 'html' in response.headers.get('Content-Type', ''):
-            direct_url = extract_video_url_from_html(response.text)
-            if not direct_url:
-                logging.error(f"Could not find a video link in the provided URL: {url}")
+        try:
+            response = requests.get(url)
+            response.raise_for_status()  # Raise an exception for bad status codes
+            if 'html' in response.headers.get('Content-Type', ''):
+                direct_url = extract_video_url_from_html(response.text)
+                if not direct_url:
+                    logging.error(f"Could not find a video link in the provided URL: {url}")
+                    return None
+            else:
+                logging.error(f"Content from URL {url} does not appear to be HTML.")
                 return None
-        else:
-            logging.error(f"Content from URL {url} does not appear to be HTML.")
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Error during request: {e}")
             return None
 
     try:
@@ -102,14 +132,24 @@ def download_video(url, filename):
         return None
 
 def process_video_pipeline(video_url, scene_threshold=None, custom_rules=None, output_dir=None):
-    """Executes the full processing pipeline for a single video."""
+    """
+    Processes a single video through the entire pipeline: download, metadata extraction,
+    scene detection, Qwen2-VL processing, tagging, classification, and export.
+
+    Args:
+        video_url (str): The URL of the video to process.
+        scene_threshold (float, optional): Threshold for scene detection. Defaults to None.
+        custom_rules (str, optional): Path to a JSON file with custom tagging rules. Defaults to None.
+        output_dir (str, optional): Directory to save the processed data. Defaults to None.
+    """
     config = load_config()
 
     scene_threshold = scene_threshold if scene_threshold is not None else config.getfloat('SceneDetection',
                                                                                          'DefaultThreshold',
                                                                                          fallback=0.3)
-    output_dir = output_dir if output_dir is not None else config.get('Paths', 'ProcessedDirectory', fallback='processed_videos/')
-    
+    output_dir = output_dir if output_dir is not None else config.get('Paths', 'ProcessedDirectory',
+                                                                     fallback='processed_videos/')
+
     logging.info(f"Starting pipeline for video: {video_url}")
     ensure_directory(output_dir)
 
@@ -118,7 +158,7 @@ def process_video_pipeline(video_url, scene_threshold=None, custom_rules=None, o
 
     # Download the Video
     local_filepath = download_video(video_url, filename)
-    
+
     if local_filepath:
         # Extract Metadata
         metadata = extract_metadata(local_filepath)
@@ -126,12 +166,15 @@ def process_video_pipeline(video_url, scene_threshold=None, custom_rules=None, o
             # Perform Scene Detection with the specified threshold
             scenes = detect_scenes(local_filepath, threshold=scene_threshold)
 
-            # Process video using Qwen2-VL Chat Model via API
-            instruction = config.get('QwenVL', 'DefaultInstruction', fallback="Describe this video.")
-            qwen_description = query_qwen_vl_chat(video_url, instruction=instruction)
+            # Load the Qwen2-VL model
+            from qwen_model import QwenVLModel  # Import here to avoid circular dependencies
+            qwen_model = QwenVLModel()
+
+            # Process video using Qwen2-VL
+            qwen_description = qwen_model.process_video(local_filepath, metadata)
 
             # Aggregate metadata, scenes, and AI descriptions
-            video_info = {**metadata, 'qwen_description': qwen_description, 'scenes': scenes}
+            video_info = {**metadata, 'qwen_description': qwen_description, 'scenes': scenes, 'filename': filename}
 
             # Apply Tags and Classification
             tags = apply_tags(video_info, custom_rules=custom_rules)
@@ -144,7 +187,7 @@ def process_video_pipeline(video_url, scene_threshold=None, custom_rules=None, o
             })
 
             logging.info(f"Video classified as {classification} with tags: {tags}")
-            
+
             # Export the processed data to JSON in the specified output directory
             export_to_json(video_info, output_dir=output_dir)
         else:
