@@ -1,5 +1,5 @@
 import logging
-from core import setup_logging, load_config, ensure_directory, query_qwen_vl_chat
+from core import setup_logging, load_config, ensure_directory, query_qwen_vl_chat, QwenVLModel
 from analysis import extract_metadata, detect_scenes
 from tagging import apply_tags, classify_video
 from export import export_to_json
@@ -132,23 +132,14 @@ def download_video(url, filename):
         return None
 
 def process_video_pipeline(video_url, scene_threshold=None, custom_rules=None, output_dir=None):
-    """
-    Processes a single video through the entire pipeline: download, metadata extraction,
-    scene detection, Qwen2-VL processing, tagging, classification, and export.
-
-    Args:
-        video_url (str): The URL of the video to process.
-        scene_threshold (float, optional): Threshold for scene detection. Defaults to None.
-        custom_rules (str, optional): Path to a JSON file with custom tagging rules. Defaults to None.
-        output_dir (str, optional): Directory to save the processed data. Defaults to None.
-    """
+    """Executes the full processing pipeline for a single video."""
     config = load_config()
 
     scene_threshold = scene_threshold if scene_threshold is not None else config.getfloat('SceneDetection',
                                                                                          'DefaultThreshold',
                                                                                          fallback=0.3)
     output_dir = output_dir if output_dir is not None else config.get('Paths', 'ProcessedDirectory',
-                                                                     fallback='processed_videos/')
+                                                                      fallback='processed_videos/')
 
     logging.info(f"Starting pipeline for video: {video_url}")
     ensure_directory(output_dir)
@@ -167,14 +158,13 @@ def process_video_pipeline(video_url, scene_threshold=None, custom_rules=None, o
             scenes = detect_scenes(local_filepath, threshold=scene_threshold)
 
             # Load the Qwen2-VL model
-            from qwen_model import QwenVLModel  # Import here to avoid circular dependencies
-            qwen_model = QwenVLModel()
+            qwen_model = QwenVLModel()  # Create an instance of the model
 
             # Process video using Qwen2-VL
             qwen_description = qwen_model.process_video(local_filepath, metadata)
 
             # Aggregate metadata, scenes, and AI descriptions
-            video_info = {**metadata, 'qwen_description': qwen_description, 'scenes': scenes, 'filename': filename}
+            video_info = {**metadata, 'qwen_description': qwen_description, 'scenes': scenes}
 
             # Apply Tags and Classification
             tags = apply_tags(video_info, custom_rules=custom_rules)

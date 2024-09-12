@@ -4,6 +4,7 @@ import csv
 import json
 import os
 from core import query_qwen_vl_chat, ensure_directory
+from moviepy.editor import VideoFileClip
 from scenedetect import VideoManager, SceneManager
 from scenedetect.detectors import ContentDetector  # For content-aware scene detection
 
@@ -117,17 +118,6 @@ def detect_scenes(filepath, threshold=30.0):
     ]
     logging.info(f"Detected {len(scene_list)} scenes in {filepath}")
     return scene_list
-import subprocess
-import logging
-import csv
-import json
-import os
-from core import query_qwen_vl_chat, ensure_directory
-from scenedetect import VideoManager, SceneManager
-from scenedetect.detectors import ContentDetector
-from moviepy.editor import VideoFileClip
-
-# ... (Your existing functions: segment_video, extract_metadata, detect_scenes)
 
 def extract_scene_segment(video_path, start_time, end_time, output_dir="scene_segments"):
     """Extracts a scene segment from a video using MoviePy."""
