@@ -117,3 +117,30 @@ def detect_scenes(filepath, threshold=30.0):
     ]
     logging.info(f"Detected {len(scene_list)} scenes in {filepath}")
     return scene_list
+import subprocess
+import logging
+import csv
+import json
+import os
+from core import query_qwen_vl_chat, ensure_directory
+from scenedetect import VideoManager, SceneManager
+from scenedetect.detectors import ContentDetector
+from moviepy.editor import VideoFileClip
+
+# ... (Your existing functions: segment_video, extract_metadata, detect_scenes)
+
+def extract_scene_segment(video_path, start_time, end_time, output_dir="scene_segments"):
+    """Extracts a scene segment from a video using MoviePy."""
+    ensure_directory(output_dir)
+    filename = os.path.basename(video_path).split('.')[0]  # Get filename without extension
+    segment_path = os.path.join(output_dir, f"{filename}_{start_time:.2f}-{end_time:.2f}.mp4")
+    try:
+        video = VideoFileClip(video_path)
+        segment = video.subclip(start_time, end_time)
+        segment.write_videofile(segment_path, codec='libx264', audio_codec='aac')
+        video.close()
+        logging.info(f"Extracted scene segment: {segment_path}")
+        return segment_path
+    except Exception as e:
+        logging.error(f"Error extracting scene segment: {e}")
+        return None
