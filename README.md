@@ -2,97 +2,115 @@
 
 ## Overview
 
-This toolkit is designed to automate the process of downloading, analyzing, tagging, and classifying video content. It leverages AI-powered content analysis (via Qwen2-VL-Chat API) alongside traditional video processing techniques to provide rich metadata and insights about video files.
+This toolkit automates downloading, analyzing, tagging, and classifying videos. It leverages the Qwen2-VL multimodal AI model for content understanding, along with traditional video processing techniques, to provide rich metadata and insights.
 
 ## Key Features
 
-- Video downloading from various sources (direct links and HTML pages)
-- Metadata extraction using FFmpeg
-- Scene detection for granular video analysis
-- AI-powered content description using Qwen2-VL-Chat API
-- Custom tagging system based on metadata and AI-generated descriptions
-- Video classification into high-level categories
-- Exportation of processed data in JSON format
-- Integration with MongoDB/Cosmos DB for data storage (optional)
+- **Video Download:** Downloads videos from various sources (direct links and HTML pages).
+- **Metadata Extraction:** Extracts technical metadata using FFmpeg (duration, resolution, codecs, etc.).
+- **Scene Detection:** Identifies scene changes for granular video analysis.
+- **AI-Powered Analysis:**  Analyzes video content using the Qwen2-VL model, generating descriptions and insights.
+- **Customizable Tagging:**  Applies tags based on metadata, Qwen2-VL output, and custom rules.
+- **Video Classification:**  Classifies videos into categories (e.g., sports, music).
+- **Data Export:** Exports processed data in JSON format.
+- **MongoDB Integration (Optional):** Stores data in a MongoDB database.
 
 ## Prerequisites
 
-- Python 3.6 or higher
-- FFmpeg installed and accessible from PATH
-- MongoDB instance (optional, for data storage)
+- **Python 3.7 or higher:** [https://www.python.org/downloads/](https://www.python.org/downloads/)
+- **FFmpeg:** Install FFmpeg on your system. Instructions vary by operating system.
+- **MongoDB (Optional):**  If you want to use MongoDB for storage, install it and set up a database.
 
 ## Installation
 
-1. Clone the repository:
-   ```
-   git clone https://github.com/yourusername/video-processing-toolkit.git
-   cd video-processing-toolkit
-   ```
-
-2. Set up a virtual environment (optional but recommended):
-   ```
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/henryperkins/video_processing_toolkit.git
+   cd video_processing_toolkit
    ```
 
-3. Install the required packages:
+2. **Create a virtual environment (recommended):**
+   ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
    ```
+
+3. **Install dependencies:**
+   ```bash
    pip install -r requirements.txt
    ```
 
-4. Configure the `config.ini` file with your settings, including API endpoints and access keys.
+4. **Download the Qwen2-VL Model:**
+   - Download the model files from Hugging Face: [https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct](https://huggingface.co/Qwen/Qwen2-VL-7B-Instruct)
+   - Extract the model files to the directory specified in your `config.ini` file (see below).
+
+5. **Configure `config.ini`:**
+   - Create a `config.ini` file in the project directory and customize the settings:
+     ```ini
+     [Paths]
+     DownloadDirectory = downloaded_videos
+     ProcessedDirectory = processed_videos
+
+     [MongoDB]
+     URI = your_mongodb_uri  ; Replace with your actual MongoDB URI
+     DatabaseName = your_database_name
+     CollectionName = your_collection_name
+
+     [Qwen]
+     ModelDir = /path/to/your/qwen2-vl-model  ; Replace with the path to the extracted model files
+
+     [Concurrency]
+     MaxWorkers = 5
+
+     [SceneDetection]
+     DefaultThreshold = 30.0
+
+     [QwenVL]
+     DefaultInstruction = Describe this video.
+     ```
 
 ## Usage
 
-Run the script using the command-line interface:
+1. **Run the script:**
+   ```bash
+   python interface.py --urls <video_url_1> <video_url_2> ... --output <output_directory>
+   ```
+   - Replace `<video_url_1>`, `<video_url_2>`, etc. with the URLs of the videos you want to process.
+   - Replace `<output_directory>` with the directory where you want to save the processed JSON files.
 
-```
-python interface.py --urls http://example.com/video1.mp4 http://example.com/video2.mp4 --output processed_videos --log_level INFO
-```
-
-### Command-line Arguments
-
-- `--urls`: List of video URLs to process (required)
-- `--config`: Path to the configuration file (default: 'config.ini')
-- `--output`: Output directory for processed data (default: from config.ini)
-- `--log_level`: Set the logging level (choices: DEBUG, INFO, WARNING, ERROR, CRITICAL; default: INFO)
-- `--scene_threshold`: Threshold for scene detection (default: from config.ini)
-- `--qwen_instruction`: Instruction passed to Qwen-VL API (default: from config.ini)
-- `--use_vpc`: Use the VPC endpoint for Qwen-VL API calls (flag)
-
-## Configuration
-
-The `config.ini` file contains various settings:
-
-- Paths for downloaded and processed videos
-- MongoDB connection details
-- Qwen-VL API endpoints and access key
-- Default values for scene detection and AI instructions
-
-## Customization
-
-- `custom_tags.json`: Define custom tagging rules based on metadata and AI-generated descriptions.
-- `priority_keywords.json`: Specify keywords for the AI model to prioritize during content analysis.
+2. **(Optional) Use a CSV file:**
+   - Create a CSV file with columns `file_name`, `file_size`, `last_modified`, and `public_url` containing video information.
+   - Run the script with the `--csv` option:
+     ```bash
+     python interface.py --csv <path_to_csv_file> --output <output_directory>
+     ```
 
 ## Output
 
-The toolkit generates a JSON file for each processed video, containing:
+The toolkit generates a JSON file for each processed video in the specified output directory. The JSON file contains:
 
 - Video metadata (duration, resolution, codec, etc.)
 - Scene change timestamps
-- AI-generated content description
+- Qwen2-VL generated description
 - Applied tags
-- High-level classification
+- Video classification
+
+## Examples
+
+- **Process videos from URLs:**
+  ```bash
+  python interface.py --urls https://www.example.com/video1.mp4 https://www.example.com/video2.mp4 --output processed_videos
+  ```
+
+- **Process videos from a CSV file:**
+  ```bash
+  python interface.py --csv video_list.csv --output processed_videos
+  ```
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please feel free to submit a pull request.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Acknowledgments
-
-- FFmpeg for video processing capabilities
-- Qwen2-VL-Chat API for AI-powered content analysis
+This project is licensed under the MIT License.
